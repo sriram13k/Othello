@@ -1,5 +1,6 @@
 import player
 import tkinter as tk
+import time
 
 
 class Othello(tk.Frame):
@@ -13,9 +14,11 @@ class Othello(tk.Frame):
         self.white_score = 0
         self.black_score = 0
         self.turn = -1                                                      # -1 for black, 1 for white
-        self.move_count = 0                                                 #Better name
+        self.move_count = 0                                                 
         self.valid_moves = []
         self.valid_moves_indicators = []  
+        self.computer = player.Player(7,1)
+        self.computer.bind(self)
         self.screen.bind("<Button-1>", self.play)
         self.create_board()
         self.update_board()
@@ -42,7 +45,7 @@ class Othello(tk.Frame):
                 elif self.board[i][j] == -1:
                     self.screen.create_oval(i*75+ 7.5, j*75 +7.5,i*75+ 67.5,j*75 + 67.5, fill = "black" , outline = "black")
         self.screen.pack()
-        self.valid_moves = self.get_valid_moves()
+        self.valid_moves = self.get_valid_moves(self.board)
         self.update_board()
         return
         
@@ -70,42 +73,68 @@ class Othello(tk.Frame):
             self.valid_moves_indicators.append(self.screen.create_oval(i*75+ 25, j*75+ 25,i*75 +50,j*75 + 50, fill = "orange" , outline = "orange"))
         
         return
-    
-#    def handle_click(self,event):
-#        x = event.x //(75)
-#        y = event.y //(75)
-#        #print(x,y)
-#        return (x,y)
-
         
-    def is_valid_move(self,x,y):
+    def is_valid_move(self,board,x,y):
         if not self.is_valid_posistion(x,y):
             return False
 
-        if self.board[x][y] != 0:
+        if  board[x][y] != 0:
             return False
         
         for (i,j) in [(1,1),(1,-1),(-1,1),(-1,1),(1,0),(0,1),(-1,0),(0,-1)]:
             current_x=x
             current_y=y
-            if self.is_valid_posistion(x+i,y+j) and self.board[x+i][y+j] == -self.turn:
+            if self.is_valid_posistion(x+i,y+j) and board[x+i][y+j] == -self.turn:
                 while True:
                     current_x += i
                     current_y += j
                     
                     if not self.is_valid_posistion(current_x,current_y):
                         break
-                    elif self.board[current_x][current_y] == -self.turn:
+                    elif board[current_x][current_y] == -self.turn:
                         continue
-                    elif self.board[current_x][current_y] == self.turn:
+                    elif board[current_x][current_y] == self.turn:
                         return True
-                    elif self.board[current_x][current_y] == 0:
+                    elif board[current_x][current_y] == 0:
                         break
         
         return False
                 
-    
-    def move(self,x,y):
+    def move(self,board,turn,x,y):
+        board[x][y] = turn
+        flips = []
+        for (i,j) in [(1,1),(1,-1),(-1,1),(-1,-1),(1,0),(0,1),(-1,0),(0,-1)]:
+            current_x=x
+            current_y=y
+            if self.is_valid_posistion(x+i,y+j) and board[x+i][y+j] == -turn:
+                flag = False
+                aux_flips = []
+                while True:
+                    current_x += i
+                    current_y += j
+                    
+                    if not self.is_valid_posistion(current_x,current_y):
+                        break
+                    elif board[current_x][current_y] == -turn:
+                        aux_flips.append((current_x,current_y))
+                        continue
+                    elif board[current_x][current_y] == turn:
+                        flag = True
+                        break
+                    elif board[current_x][current_y] == 0:
+                        break
+                
+                if flag == True:
+                    flips = flips + aux_flips
+        
+
+        for (x,y) in flips:
+            #print(x,y)
+            board[x][y] = -board[x][y]
+
+        return board
+
+    def update_move(self,x,y):
         self.board[x][y] = self.turn
         flips = []
         for (i,j) in [(1,1),(1,-1),(-1,1),(-1,-1),(1,0),(0,1),(-1,0),(0,-1)]:
@@ -131,8 +160,6 @@ class Othello(tk.Frame):
                 
                 if flag == True:
                     flips = flips + aux_flips
-        
-        #flips = set(flips)
 
         for (x,y) in flips:
             print(x,y)
@@ -140,7 +167,7 @@ class Othello(tk.Frame):
 
         self.move_count += 1 
         self.turn = -self.turn
-        self.valid_moves = self.get_valid_moves()
+        self.valid_moves = self.get_valid_moves(self.board)
         self.update_board()
         
         if self.white_score == 0:
@@ -152,25 +179,31 @@ class Othello(tk.Frame):
         
         if len(self.valid_moves) == 0:
             self.turn = -self.turn
-            self.valid_moves = self.get_valid_moves()
+            self.valid_moves = self.get_valid_moves(self.board)
             if(len(self.valid_moves) == 0):
                 if self.white_score > self.black_score:
                     print("White Won")
+                    exit()
                     return 1
                 elif self.black_score > self.white_score:
                     print("Black Won")
+                    exit()
                     return -1
                 else:
                     print("Draw")
+                    exit()
                     return 2
+            
+            else:
+                self.update_board()
             
         return 0
         
-    def get_valid_moves(self):
+    def get_valid_moves(self,board):
         valid_moves = []
         for i in range(8):
             for j in range(8):
-                if self.is_valid_move(i,j):
+                if self.is_valid_move(board,i,j):
                     valid_moves.append((i,j))
 
         return valid_moves    
@@ -187,8 +220,15 @@ class Othello(tk.Frame):
 
         x = event.x //(75)
         y = event.y //(75)
-        print(x,y)
-        if self.is_valid_move(x,y):
-            self.move(x,y)
+        #print(x,y)
+        if self.turn == -1:
+            if self.is_valid_move(self.board,x,y):
+                self.update_move(x,y)
+                time.sleep(1)
+                computer_x, computer_y = self.computer.move()
+                self.update_move(computer_x,computer_y)
+            else:
+                return
         else:
-            return
+            computer_x, computer_y = self.computer.move()
+            self.update_move(computer_x,computer_y)
