@@ -6,7 +6,7 @@ class Player():
     def __init__(self,depth,color):
         self.bind_flag = False
         self.color = color                      # -1 for black, 1 for white
-        self.depth = depth
+        self.depth = depth*2
         self.nodes_expanded = 0
 
     def bind(self,game):
@@ -16,7 +16,7 @@ class Player():
     def move(self):
         #optimal_move, _ =  self.minimax_search()
         optimal_move, _ = self.alpha_beta_search()
-        print(self.nodes_expanded)
+        print("Nodes expanded" + str(self.nodes_expanded))
         self.nodes_expanded = 0
         return optimal_move
 

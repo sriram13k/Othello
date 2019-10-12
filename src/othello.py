@@ -8,6 +8,9 @@ class Othello(tk.Frame):
         super().__init__(master)
         self.player1 = player1
         self.player2 = player2
+        self.player1_flag = False
+        self.player2_flag = False
+        self.bind_players()
         self.master = master
         self.screen = tk.Canvas(self.master, width=600, height=600)
         self.board = [[0 for i in range(8)] for j in range(8)]
@@ -17,8 +20,6 @@ class Othello(tk.Frame):
         self.move_count = 0                                                 
         self.valid_moves = []
         self.valid_moves_indicators = []  
-        self.computer = player.Player(7,1)
-        self.computer.bind(self)
         self.screen.bind("<Button-1>", self.play)
         self.create_board()
         self.update_board()
@@ -70,8 +71,10 @@ class Othello(tk.Frame):
         self.valid_moves_indicators = []
         
         for i,j in self.valid_moves:
-            self.valid_moves_indicators.append(self.screen.create_oval(i*75+ 25, j*75+ 25,i*75 +50,j*75 + 50, fill = "orange" , outline = "orange"))
-        
+            if self.turn == -1:
+                self.valid_moves_indicators.append(self.screen.create_oval(i*75+ 25, j*75+ 25,i*75 +50,j*75 + 50, fill = "orange" , outline = "orange"))
+            else:
+                self.valid_moves_indicators.append(self.screen.create_oval(i*75+ 25, j*75+ 25,i*75 +50,j*75 + 50, fill = "blue" , outline = "blue"))
         return
         
     def is_valid_move(self,board,x,y):
@@ -81,7 +84,7 @@ class Othello(tk.Frame):
         if  board[x][y] != 0:
             return False
         
-        for (i,j) in [(1,1),(1,-1),(-1,1),(-1,1),(1,0),(0,1),(-1,0),(0,-1)]:
+        for (i,j) in [(1,1),(1,-1),(-1,1),(-1,-1),(1,0),(0,1),(-1,0),(0,-1)]:
             current_x=x
             current_y=y
             if self.is_valid_posistion(x+i,y+j) and board[x+i][y+j] == -self.turn:
@@ -169,6 +172,8 @@ class Othello(tk.Frame):
         self.turn = -self.turn
         self.valid_moves = self.get_valid_moves(self.board)
         self.update_board()
+        print("Board Updated")
+        tk.Tk.update(self)
         
         if self.white_score == 0:
             print("Black Won")
@@ -178,6 +183,7 @@ class Othello(tk.Frame):
             return 1
         
         if len(self.valid_moves) == 0:
+            print("Checking end of game")
             self.turn = -self.turn
             self.valid_moves = self.get_valid_moves(self.board)
             if(len(self.valid_moves) == 0):
@@ -195,6 +201,7 @@ class Othello(tk.Frame):
                     return 2
             
             else:
+                print("Move Forfeits")
                 self.update_board()
             
         return 0
@@ -220,7 +227,8 @@ class Othello(tk.Frame):
 
         x = event.x //(75)
         y = event.y //(75)
-        #print(x,y)
+
+        """
         if self.turn == -1:
             if self.is_valid_move(self.board,x,y):
                 self.update_move(x,y)
@@ -232,3 +240,52 @@ class Othello(tk.Frame):
         else:
             computer_x, computer_y = self.computer.move()
             self.update_move(computer_x,computer_y)
+        """
+
+        if self.turn == -1:
+            if self.player1_flag:
+                self.player1_play()
+            else:
+                if self.is_valid_move(self.board,x,y):
+                    self.update_move(x,y)
+                    if self.player2_flag:
+                        self.player2_play()
+        
+        elif self.turn == 1:
+            if self.player2_flag:
+                self.player2_play()
+            else:
+                if self.is_valid_move(self.board,x,y):
+                    self.update_move(x,y)
+                    if self.player1_flag:
+                        self.player1_play()
+ 
+                
+
+    def bind_players(self):
+        if isinstance(self.player1,player.Player):
+            self.player1.bind(self)
+            self.player1_flag =True
+
+        if isinstance(self.player2,player.Player):
+            self.player2.bind(self)
+            self.player2_flag = True        
+
+    def player1_play(self):
+        if self.turn == -1:
+            player1_x, player1_y = self.player1.move()
+            self.update_move(player1_x,player1_y)
+            if self.player2_flag:
+                self.player2_play()
+        else:
+            if self.player2_flag:
+                self.player2_play()
+    def player2_play(self):
+        if self.turn == 1:
+            player2_x, player2_y = self.player2.move()
+            self.update_move(player2_x,player2_y)
+            if self.player1_flag:
+                self.player1_play()
+        else:
+            if self.player1_flag:
+                self.player1_play()
